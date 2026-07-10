@@ -1,0 +1,12 @@
+{
+  "name": "book-instagram-reels-meta",
+  "version": "1.0.0",
+  "description": "Schedule Instagram Reels via Meta Business Suite Reels Composer",
+  "main": "book_upload_instagram.js",
+  "scripts": {
+    "upload": "node book_upload_instagram.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

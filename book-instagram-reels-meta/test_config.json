@@ -1,0 +1,11 @@
+{
+  "videos": ["C:\\Users\\oscar\\AppData\\Local\\Temp\\opencode\\test_reel.mp4"],
+  "captions": ["Test Reel from OpenCode\n\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n\n#rap\n#boombap\n#perpetuobeats"],
+  "scheduleType": "daily",
+  "time": "7:33 PM",
+  "startDate": "2026-06-16",
+  "audioEnabled": false,
+  "audioQuery": "",
+  "dryRun": false,
+  "quiet": false
+}

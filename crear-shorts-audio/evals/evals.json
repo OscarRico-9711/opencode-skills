@@ -1,0 +1,20 @@
+{
+  "skill_name": "crear-shorts-audio",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Haz un short de 30 segundos con esta cancion y esta imagen, con subtitulos tipo TikTok y texto random.",
+      "expected_output": "Debe pedir rutas si faltan, usar make-short.ps1, imagen 9:16 con blur suave, Whisper karaoke y output mp4."
+    },
+    {
+      "id": 2,
+      "prompt": "Divide esta cancion en 3 partes para TikTok, cada parte con subtitulos y luego pregunta como buscar la cancion en TikTok.",
+      "expected_output": "Debe proponer cortar audio en tres segmentos, generar videos independientes con subtitulos por segmento, advertir riesgo de sincronia del sonido TikTok y usar book-tiktok-shorts/programar-videos para subida."
+    },
+    {
+      "id": 3,
+      "prompt": "Tengo varias pistas y una imagen, crea videos en masa de 20 segundos y programalos en TikTok con sonido de libreria.",
+      "expected_output": "Debe batch renderizar cada pista, crear manifest/lista de outputs, preguntar soundSearchTerm o soundSearchTerms, hacer dry-run y pedir aprobacion antes de programar TikTok."
+    }
+  ]
+}

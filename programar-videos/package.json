@@ -1,0 +1,15 @@
+{
+  "name": "programar-videos",
+  "version": "1.0.0",
+  "description": "Orquestador multi-red para programar videos en TikTok, YouTube Shorts, etc.",
+  "main": "orchestrator.js",
+  "scripts": {
+    "start": "node orchestrator.js",
+    "check": "node --check orchestrator.js",
+    "test": "node --check orchestrator.js"
+  },
+  "keywords": ["tiktok", "youtube", "shorts", "scheduler", "orchestrator"],
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
