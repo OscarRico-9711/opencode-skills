@@ -1,16 +1,17 @@
 ---
 name: descargar-youtube-wav
-description: Use when the user asks to descargar una lista/playlist/video de YouTube as WAV audio using yt-dlp. Requires a YouTube URL parameter and defaults to E:\3_Samples\samplesnuevos output.
+description: Use when Oscar asks to descargar, bajar, extraer o convertir una lista/playlist/video de YouTube a MP3 con yt-dlp, especialmente para samples. Requires a YouTube URL and defaults to E:\3_Samples\samplesnuevos output unless another folder is requested.
 ---
 
-# Descargar YouTube WAV
+# Descargar YouTube MP3
 
 Use this skill when Oscar asks to download audio from YouTube, especially playlists/lists, for example:
 
 - "descarga esta lista de YouTube"
-- "baja esta playlist en WAV"
+- "baja esta playlist"
 - "descarga estos videos como audio"
 - "descarga de YouTube para samples"
+- "baja este video en MP3"
 
 ## Input
 
@@ -24,73 +25,87 @@ If the user does not provide a URL, ask for it before running anything.
 
 ## Defaults
 
-Use this output folder unless Oscar gives another one:
+Output folder:
 
 ```text
 E:\3_Samples\samplesnuevos
 ```
 
-Always extract audio as WAV:
+Audio format:
 
 ```text
---extract-audio --audio-format wav
+-x --audio-format mp3 --audio-quality 0
 ```
 
-Use the same reliable YouTube extractor compatibility setting from Oscar's existing batch file:
+YouTube client (reliable for format 18 which is always available):
 
 ```text
 --extractor-args "youtube:player_client=android"
 ```
 
+Do NOT use `--restrict-filenames` or `--windows-filenames` — they strip characters and break readable filenames.
+
+Do NOT add playlist index counters or video IDs to filenames. Use clean `%(title)s.%(ext)s`.
+
 ## Recommended Command
 
-Use PowerShell from any working directory. Replace `<URL>` with the user's YouTube URL:
+Use PowerShell. `cd` into the output folder first (same as Oscar's original working batch file), then use a relative `--output`:
 
 ```powershell
-$OutputFolder = "E:\3_Samples\samplesnuevos"
 $Url = "<URL>"
-if (-not (Test-Path -LiteralPath $OutputFolder)) { New-Item -ItemType Directory -Path $OutputFolder | Out-Null }
-py -m yt_dlp `
-  --extract-audio `
-  --audio-format wav `
+Set-Location -LiteralPath "E:\3_Samples\samplesnuevos"
+py -m yt_dlp -x `
+  --audio-format mp3 `
   --audio-quality 0 `
   --ignore-errors `
+  --continue `
+  --no-overwrites `
   --no-write-info-json `
   --no-write-thumbnail `
   --no-write-playlist-metafiles `
   --no-download-archive `
-  --restrict-filenames `
-  --windows-filenames `
   --extractor-args "youtube:player_client=android" `
-  --output "$OutputFolder\%(playlist_index,upload_date>%Y%m%d)s - %(title).180B [%(id)s].%(ext)s" `
-  --print-to-file "FAILED: %(title)s | %(id)s | %(url)s" "$OutputFolder\log_fails.txt" `
+  --output "%(title)s.%(ext)s" `
   $Url
+```
+
+If the output folder does not exist yet, create it before `cd`:
+
+```powershell
+if (-not (Test-Path -LiteralPath "E:\3_Samples\samplesnuevos")) { New-Item -ItemType Directory -Path "E:\3_Samples\samplesnuevos" | Out-Null }
+```
+
+If Oscar asks for a failure log, append after the main command:
+
+```powershell
+py -m yt_dlp ... --print-to-file "FAILED: %(title)s | %(id)s | %(url)s" "log_fails.txt"
 ```
 
 ## Rules
 
-- Always download/convert to `.wav`, not MP3.
-- Do not use `cd`; pass the full output path in `--output`.
-- Keep failure logs in `E:\3_Samples\samplesnuevos\log_fails.txt` unless another output folder is requested.
+- Always download/convert to `.mp3`, not WAV.
+- Do not add playlist index counters or video IDs to filenames — use `%(title)s.%(ext)s`.
+- Filenames should keep their original readable titles (no `--restrict-filenames`).
 - Use `--ignore-errors` so one failed video does not stop the entire playlist.
-- Use `--restrict-filenames` and `--windows-filenames` to avoid broken Windows filenames.
-- Keep the YouTube video ID in the filename to avoid collisions when titles repeat.
+- Use `--continue` and `--no-overwrites` to resume partial downloads without replacing files Oscar already has.
 - Do not delete existing files.
 - If the user requests only one video from a playlist URL, add `--no-playlist`.
 - If the user requests a full playlist, do not add `--no-playlist`.
+- The `android` client is the only reliable one for these sample playlists. Do not use `web`, `ios`, or `mweb`.
 
 ## Dependency Check
 
-If the download fails because `yt-dlp` is missing, verify with:
+Before a large playlist, check dependencies once:
 
 ```powershell
 py -m yt_dlp --version
-```
-
-If FFmpeg is missing, WAV extraction/conversion may fail. Verify with:
-
-```powershell
 ffmpeg -version
 ```
 
-Report the missing dependency clearly before trying unrelated alternatives.
+If `yt-dlp` is missing or YouTube extraction fails unexpectedly, update it:
+
+```powershell
+py -m pip install -U yt-dlp
+```
+
+If FFmpeg is missing, audio extraction will fail. Report missing dependencies clearly before trying alternatives.
