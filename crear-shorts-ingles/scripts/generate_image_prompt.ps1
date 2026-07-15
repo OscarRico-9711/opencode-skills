@@ -6,14 +6,14 @@ param(
 )
 
 $safeTitle = $Title.Trim()
-$base = "vertical 9:16, cinematic, clean composition, negative space for text overlay, no text in image, realistic, no AI look"
+$base = "vertical 9:16, highly stylized, dramatic cinematic lighting, vibrant colors, negative space for text overlay, no text in image, art direction, visually striking"
 
 if ($Mode -eq "topic") {
-  $prompt = "modern English learning visual about $safeTitle, clean study desk, notebook, subtle classroom elements, minimal educational atmosphere, soft cinematic lighting, $base"
+  $prompt = "cinematic English learning visual about '$safeTitle', modern classroom, warm sunlight, books, notebook, moody atmosphere, dramatic shadows, $base"
 } elseif ($Mode -eq "phrasal") {
-  $prompt = "conceptual realistic scene representing the English phrasal verb '$safeTitle' meaning '$Meaning', expressive human action, clear visual metaphor, $base"
+  $prompt = "conceptual dramatic scene representing the English phrasal verb '$safeTitle' meaning '$Meaning', expressive human action, cinematic storytelling, strong visual metaphor, dynamic composition, $base"
 } else {
-  $prompt = "realistic visual representation of the English word '$safeTitle' meaning '$Meaning', clear subject, cinematic photography, $base"
+  $prompt = "cinematic stylized visual representation of the English word '$safeTitle' meaning '$Meaning', clear subject, dramatic photography, vibrant palette, artistic composition, $base"
 }
 
 if ($OutputPath) {

@@ -322,8 +322,8 @@ Para generar imagen, usa el script existente con salida en:
 D:\BackUpDisco\English-shorts\images
 ```
 
-Word/phrasal: imagen relacionada al concepto.
-Topic: fondo educativo limpio, aula/notebook/abstract, espacio para texto.
+Word/phrasal: imagen llamativa relacionada al concepto, nada plano, busca composicion dramatica.
+Topic: fondo educativo estilizado, aula/notebook/abstract con iluminacion dramatica, espacio para texto.
 
 Antes de usar fallback local, reintenta la imagen IA hasta 3 veces si el error parece de red/DNS/API temporal. Espera unos segundos entre intentos cuando sea posible. Si todas las APIs fallan, muestra el motivo exacto y pregunta a Oscar antes de continuar.
 
@@ -352,7 +352,7 @@ Fallback local:
 Prompt base obligatorio:
 
 ```text
-vertical 9:16, cinematic, clean composition, negative space for text overlay, no text in image, realistic, no AI look
+vertical 9:16, highly stylized, dramatic cinematic lighting, vibrant colors, negative space for text overlay, no text in image, art direction, visually striking
 ```
 
 Guarda el prompt exacto en:
