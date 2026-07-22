@@ -1,6 +1,6 @@
 ---
 name: enviar-whatsapp
-description: Use when Oscar asks to enviar mensaje por WhatsApp, mandame esto por WhatsApp, avisame al celular, notificar por WhatsApp, mandame una palabra random en ingles, vocabulario C1 por WhatsApp, enviar video por WhatsApp, mandame el video, or send paths/results from generated videos, shorts, audios, APKs, reports, or completed tasks using CallMeBot and WhatsApp Web media sender.
+description: Use when Oscar asks to enviar mensaje por WhatsApp, mandame esto por WhatsApp, avisame al celular, notificar por WhatsApp, mandame una palabra random en ingles, vocabulario C1 por WhatsApp, enviar video por WhatsApp, mandame el video, or send paths/results from generated videos, shorts, audios, APKs, reports, or completed tasks. Texto via CallMeBot, videos via watcher headless (sin navegador visible, sin desktop app).
 ---
 
 # Enviar WhatsApp
@@ -11,97 +11,55 @@ Tambien usalo cuando Oscar pida una palabra random de ingles, vocabulario C1, de
 
 ## Configuracion
 
-El envio de texto usa CallMeBot con este helper local:
-
+### Texto - CallMeBot
 ```text
 C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1
 ```
+Variables de entorno: `CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY`.
 
-El helper lee estas variables de entorno de usuario:
-
-```text
-CALLMEBOT_PHONE
-CALLMEBOT_APIKEY
-```
-
-No escribas el telefono ni la API key dentro de skills, scripts nuevos, prompts o logs salvo que Oscar lo pida explicitamente.
-
-El envio de videos/adjuntos usa WhatsApp Web con este watcher:
-
+### Video/archivos - Watcher headless (sin navegador visible, sin desktop app)
 ```text
 C:\Users\oscar\.config\opencode\whatsapp-video-sender
 ```
+Usa Puppeteer headless (`headless: true` en config.json). NO abre ventana de Chrome, NO descarga WhatsApp Desktop. Solo terminal con logs.
 
 Outbox vigilado:
-
 ```text
 D:\BackUpDisco\WhatsApp-outbox
 ```
 
-Helper para poner archivos aprobados en cola:
-
+Helper para encolar archivos:
 ```text
 C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1
 ```
 
-(El anterior `queue-whatsapp-video.ps1` solo aceptaba videos, no lo uses.)
-
 ## Uso
 
-Para enviar un mensaje:
+Para enviar un mensaje de texto:
 
 ```powershell
 & "C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1" -Message "MENSAJE"
 ```
 
-Para enviar un video aprobado por Oscar:
+Para enviar un video/archivo:
 
 ```powershell
-& "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-video.ps1" -Path "RUTA_DEL_VIDEO.mp4"
-```
+# 1. Encolar el archivo
+& "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1" -Path "RUTA_DEL_VIDEO.mp4"
 
-El watcher debe estar corriendo en otra terminal:
-
-```powershell
+# 2. Iniciar watcher (si no esta corriendo)
 & "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
 ```
-
-La primera vez muestra QR; Oscar debe escanearlo con WhatsApp. La sesion queda guardada.
+El watcher inicia en terminal nueva con logs. Envia el archivo y se queda esperando mas.
 
 ## Reglas
 
 - Antes de enviar contenido no solicitado, pregunta a Oscar si quiere recibirlo por WhatsApp.
 - Si Oscar dice claramente `si`, `sí`, `mandalo`, `envialo`, `whatsapp`, o `avisame`, envia el mensaje.
-- Envia texto corto y util con CallMeBot: nombre del archivo, ruta local, estado, duracion, o link si existe.
-- Para videos que Oscar indique enviar, usa `queue-whatsapp-video.ps1`. No lo uses automaticamente sin aprobacion.
-- CallMeBot SOLO para texto. NUNCA lo uses para enviar archivos, imagenes, documentos, APKs, botones ni respuestas.
-- Para enviar CUALQUIER archivo (videos, APKs, imagenes, audios) usa SIEMPRE el watcher de WhatsApp Web via `queue-whatsapp-media.ps1`.
-- El watcher soporta: `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`, `.apk`. Si falta una extension, actualiza `config.json` del watcher.
+- CallMeBot SOLO para texto. NUNCA lo uses para enviar archivos.
+- Para archivos usa SIEMPRE `queue-whatsapp-media.ps1` + watcher headless.
 - No uses WhatsApp para secretos, API keys, tokens o credenciales.
 - Si falla el envio, informa el error y conserva el resultado local.
-
-## Archivos Y Adjuntos (WhatsApp Web)
-
-Cuando Oscar diga `mandame el video`, `envialo por WhatsApp`, `mandamelo`, `manda ese mp4`, `manda el apk`, o apruebe recibir cualquier archivo:
-
-1. Verifica que el archivo exista.
-2. El watcher soporta: `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`, `.apk`. Si no esta soportado, primero actualiza `config.json` del watcher.
-3. Ejecuta:
-
-```powershell
-& "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1" -Path "<ruta_del_archivo>"
-```
-
-4. Si el watcher no esta corriendo, iniciarlo con:
-
-```powershell
-& "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
-```
-
-5. El watcher mueve enviados a `D:\BackUpDisco\WhatsApp-outbox\sent` y fallidos a `D:\BackUpDisco\WhatsApp-outbox\failed`.
-
-No copies carpetas completas al outbox. Solo archivos aprobados.
-Para APKs, prefiere usar el APK debug (ya firmado) sobre el release (no firmado).
 
 ## Palabras Random En Ingles
 

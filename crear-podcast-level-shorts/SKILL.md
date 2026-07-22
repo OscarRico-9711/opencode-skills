@@ -33,6 +33,7 @@ Estas reglas existen por fallos reales de produccion. Son obligatorias:
 - No uses una imagen IA con texto no deseado, logos, letras raras o palabras grandes si el texto compite con subtitulos o esta en el foco principal. Para videos de ingles con subtitulos grandes, no bloquees por texto pequeno de fondo o bordes si puede quedar cubierto, recortado o no afecta el resultado final.
 - No improvises filtros FFmpeg complejos si hay un skill de FFmpeg disponible. Usa el skill `ffmpeg` para conversion, waveform, subtitulos, zoom, overlays o render final cuando estes construyendo el MP4.
 - No presentes un video como final si no verificaste que usa la imagen IA correcta, una voz natural y la duracion/resolucion esperadas.
+- No concatenes WAV de edge-tts con `-c copy` (stream copy). edge-tts genera MP3 con extension .wav, y al copiar directo el header WAV queda corrupto. Siempre convierte cada archivo a PCM s16le primero antes de concatenar. Usa Python con `wave` module o ffmpeg `-c pcm_s16le` para cada segmento, luego concatena los PCMs con `-c copy`.
 
 ## Orden De Produccion Obligatorio
 
