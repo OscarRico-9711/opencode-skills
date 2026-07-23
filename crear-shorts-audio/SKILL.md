@@ -125,7 +125,7 @@ Sigue este orden para evitar asumir duración, cantidad o textos:
 7. Si se generan textos aleatorios o variaciones, muestra la lista exacta de textos antes de renderizar y espera confirmación. Para beats sin subtitulos, genera suficientes textos para rotarlos cada 3 o 5 segundos dentro de cada video.
 8. Renderiza una tanda: un video por imagen elegida/generada, con texto diferente por video si aplica.
 9. Después de generar y verificar los archivos, pregunta si quiere recibir un aviso por WhatsApp con la carpeta/rutas de salida.
-10. Si Oscar dice que sí, usa `C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1` con un mensaje corto. CallMeBot solo envia texto, no archivos; manda rutas locales o links si existen.
+10. Si Oscar dice que sí, encola el video con `C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1` y arranca el watcher. CallMeBot solo se usa para palabras diarias, no para archivos ni resultados.
 11. Después pregunta si quiere subir/programar a redes sociales: TikTok, YouTube Shorts, ambas o solo conservar archivos.
 
 ## Preguntas Iniciales
@@ -172,10 +172,11 @@ Después de generar y verificar los videos, pregunta:
 ¿Quieres que te mande por WhatsApp la carpeta/rutas de los videos generados?
 ```
 
-Si dice sí, envia un mensaje con el helper:
+Si dice sí, encola el primer video con:
 
 ```powershell
-& "C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1" -Message "Tanda de shorts lista: <cantidad> videos`nCarpeta: <ruta_de_salida>"
+& "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1" -Path "<ruta_del_primer_video>"
+& "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
 ```
 
 Despues pregunta:

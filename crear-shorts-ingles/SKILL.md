@@ -153,8 +153,8 @@ Cuando Oscar diga `crea video en ginles`, `crea video en ingles`, `genera englis
 17. Renderiza MP4.
 18. Verifica MP4 con `ffprobe`.
 19. Escribe manifest JSON.
-20. Pregunta si Oscar quiere recibir por WhatsApp la ruta del video o carpeta generada.
-21. Si Oscar dice que sí, usa `C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1` con un mensaje corto. CallMeBot solo envia texto, no archivos; manda rutas locales o links si existen.
+20. Pregunta si Oscar quiere recibir el video por WhatsApp. Manda el archivo, no la ruta.
+21. Si Oscar dice que sí, encola el video con `C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1` y arranca el watcher. CallMeBot solo se usa para palabras diarias, no para archivos ni resultados.
 22. Pregunta si quiere subir/programar y delega a `programar-videos`.
 
 Usa menus interactivos cuando esten disponibles. Para tandas grandes, ofrece aprobacion por lote: `Aprobar todo`, `Regenerar todo`, `Editar uno`, `Cambiar nivel`, `Cambiar modo`.
@@ -162,13 +162,14 @@ Usa menus interactivos cuando esten disponibles. Para tandas grandes, ofrece apr
 Despues de renderizar, verificar y escribir el manifest, pregunta:
 
 ```text
-¿Quieres que te mande por WhatsApp la ruta del video/carpeta generada?
+¿Quieres que te mande el video por WhatsApp?
 ```
 
-Si dice sí, envia un mensaje con:
+Si dice sí, encola el video con:
 
 ```powershell
-& "C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1" -Message "English short listo:`n<ruta_del_video_o_carpeta>"
+& "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1" -Path "<ruta_del_video>"
+& "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
 ```
 
 ## English Professor Engine

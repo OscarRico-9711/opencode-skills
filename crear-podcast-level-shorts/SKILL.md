@@ -48,7 +48,7 @@ Sigue este orden. No lo comprimas en un unico paso opaco:
 7. Usar FFmpeg para render final con waveform, zoom/movimiento, overlays y subtitulos.
 8. Verificar con `ffprobe` y revisar al menos una muestra visual antes de responder.
 9. Preguntar si Oscar quiere recibir por WhatsApp la ruta del video o carpeta generada.
-10. Si Oscar dice que sí, usar `C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1` con un mensaje corto. CallMeBot solo envia texto, no archivos; manda rutas locales o links si existen.
+10. Si Oscar dice que sí, encola el video con `C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1` y arranca el watcher. CallMeBot solo se usa para palabras diarias, no para archivos ni resultados.
 
 ## Patron Del Video De Referencia
 
@@ -128,10 +128,11 @@ Despues de renderizar y verificar el video, pregunta:
 ¿Quieres que te mande por WhatsApp la ruta del video generado?
 ```
 
-Si dice sí, envia un mensaje con:
+Si dice sí, encola el video con:
 
 ```powershell
-& "C:\Users\oscar\.config\opencode\scripts\send-whatsapp.ps1" -Message "Short educativo listo:`n<ruta_del_video>"
+& "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1" -Path "<ruta_del_video>"
+& "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
 ```
 
 ## Estructura Del Guion
