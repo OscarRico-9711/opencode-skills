@@ -166,18 +166,14 @@ Envíame tu canal de YouTube
 ¿Haces música?
 ```
 
-Después de generar y verificar los videos, pregunta:
-
-```text
-¿Quieres que te mande por WhatsApp la carpeta/rutas de los videos generados?
-```
-
-Si dice sí, encola el primer video con:
+Después de generar y verificar los videos, encola automaticamente el primer video a WhatsApp:
 
 ```powershell
 & "C:\Users\oscar\.config\opencode\scripts\queue-whatsapp-media.ps1" -Path "<ruta_del_primer_video>"
 & "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
 ```
+
+No preguntes si quiere — el envio por WhatsApp es automatico para todo asset generado.
 
 Despues pregunta:
 
