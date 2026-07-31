@@ -233,20 +233,17 @@ No preguntes nada de titulos o metadata mientras solo se esta creando/renderizan
 - Muestra 3 opciones de titulo y espera eleccion antes de subir/programar.
 - Muestra descripcion final y espera aprobacion antes de abrir/subir a YouTube.
 
-## Configuracion De APIs Para Generar Imagenes
+## Generacion De Imagenes (Multi-Proveedor)
 
-Para generar imagenes desde prompts, necesitas configurar al menos una API key. Por defecto usa Hugging Face; OpenAI queda como fallback opcional.
+`generar_imagen_desde_prompt.ps1` usa una cadena de proveedores en orden. No se requiere ninguna key para el primero.
 
-### Hugging Face (recomendado)
-1. Ve a https://huggingface.co/settings/tokens
-2. Crea un token con rol `read` (gratis, requiere cuenta)
-3. Copia el token
+1. **Pollinations** (gratis, sin key) — FLUX. Primera opcion, no requiere configuracion.
+2. **Hugging Face** (con key, free tier ~$0.10/mes) — fallback si Pollinations falla.
+3. **OpenAI** (opcional, con key `sk-...`) — fallback final solo si esta instalado el paquete `openai` de Python.
 
-### OpenAI (fallback opcional)
-1. Crea una API key en OpenAI
-2. Copia la key
+El script detecta errores (429 rate limit, 402 sin credito, 410 deprecado, timeout) e intenta con el siguiente proveedor automaticamente.
 
-### Archivo de configuracion
+### Archivo de configuracion (opcional)
 Crea `~\.opencode\api_keys.json` con este formato:
 ```json
 {
@@ -254,7 +251,9 @@ Crea `~\.opencode\api_keys.json` con este formato:
   "openai": "sk-..."
 }
 ```
-Puedes tener solo `huggingface`. El script eligira entre Hugging Face y OpenAI si ambas estan disponibles, y hara fallback si una falla.
+Puedes omitirlo por completo: con solo Pollinations las imagenes se generan gratis. Agrega `huggingface` si quieres respaldo de HF, y `openai` solo si configuras el paquete `openai`.
+
+Nota: Pollinations tiene rate limit (429) si generas varias imagenes seguidas; el script hace fallback automatico en ese caso.
 
 ## Script De Render
 

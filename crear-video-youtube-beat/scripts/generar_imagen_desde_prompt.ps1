@@ -26,54 +26,25 @@ if (Test-Path -LiteralPath $ApiKeysFile) {
     $apiKeys = Get-Content -Raw -Path $ApiKeysFile | ConvertFrom-Json
 }
 
-$apisAvailable = @()
-if (-not [string]::IsNullOrWhiteSpace($apiKeys.huggingface)) { $apisAvailable += "huggingface" }
-if ($apisAvailable.Count -eq 0) {
-    throw "No API keys found. Configure at least one in: $ApiKeysFile"
+if ([string]::IsNullOrWhiteSpace($apiKeys.huggingface)) {
+    Write-Host "Warning: no huggingface key in $ApiKeysFile; Pollinations (gratis) sera la unica opcion."
 }
 
-function Invoke-HuggingFace {
-    param([string]$Token, [string]$Prompt, [string]$OutPath, [int]$Width, [int]$Height)
-    $providers = @(
-        @{ name = "together"; url = "https://router.huggingface.co/together/v1/images/generations" },
-        @{ name = "nscale"; url = "https://router.huggingface.co/nscale/v1/images/generations" }
-    )
-    $lastErr = $null
-    foreach ($p in $providers) {
-        try {
-            $body = @{
-                model = "black-forest-labs/FLUX.1-schnell"
-                prompt = $Prompt
-                response_format = "url"
-                width = $Width
-                height = $Height
-            } | ConvertTo-Json -Depth 5 -Compress
-            $resp = Invoke-RestMethod -Uri $p.url -Method Post -ContentType "application/json" -Headers @{ Authorization = "Bearer $Token" } -Body $body -TimeoutSec 180
-            $imageUrl = $resp.data[0].url
-            if (-not $imageUrl) { throw "No image URL returned from $($p.name)" }
-            $tmpImg = Join-Path -Path $env:TEMP -ChildPath "hf_img_$(Get-Random).tmp"
-            Invoke-WebRequest -Uri $imageUrl -OutFile $tmpImg -TimeoutSec 60 | Out-Null
-            if ((Get-Item -LiteralPath $tmpImg).Length -le 1000) { throw "Image too small" }
-            Move-Item -LiteralPath $tmpImg -Destination $OutPath -Force
-            return
-        } catch { $lastErr = $_; Write-Warning "$($p.name) failed: $_" }
-    }
-    throw $lastErr
+$helperScript = Join-Path $PSScriptRoot "generar_imagen_multi.py"
+
+Write-Host "Generando imagen con cadena multi-proveedor (Pollinations -> HuggingFace)..."
+$output = & python $helperScript --prompt $prompt --output $outputPath --width $Width --height $Height 2>&1
+$exitCode = $LASTEXITCODE
+
+if ($exitCode -ne 0) {
+    $output | ForEach-Object { Write-Warning $_ }
+    throw "All image generation providers failed for prompt: $prompt"
 }
 
-$success = $false
+$output | ForEach-Object { Write-Host $_ }
 
-Write-Host "Using API: huggingface"
-try {
-    Invoke-HuggingFace -Token $apiKeys.huggingface -Prompt $prompt -OutPath $outputPath -Width $Width -Height $Height
-    $success = $true
-    Write-Host "API used: huggingface"
-} catch {
-    Write-Warning "huggingface failed: $_"
-}
-
-if (-not $success) {
-    throw "All image generation APIs failed for prompt: $prompt"
+if (-not (Test-Path -LiteralPath $outputPath)) {
+    throw "Image not found after generation: $outputPath"
 }
 
 Write-Host "Image generated: $outputPath"
