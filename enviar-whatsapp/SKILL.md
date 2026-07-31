@@ -52,6 +52,20 @@ Para enviar un video/archivo:
 ```
 El watcher inicia en terminal nueva con logs. Envia el archivo y se queda esperando mas.
 
+### Enviar pista/beat al grupo "Muestras - perpetuo beats" (como documento, se ve el nombre)
+
+> ⚠️ Esto SOLO envia al grupo de beats. Videos, podcast, ingles, etc. usan `queue-whatsapp-media.ps1` (van al numero personal).
+
+```powershell
+# 1. Encolar la pista
+& "C:\Users\oscar\.config\opencode\scripts\send-pista.ps1" -Path "E:\ruta\beat.mp3"
+
+# 2. Enviar
+& "C:\Users\oscar\.config\opencode\scripts\start-whatsapp-video-sender.ps1"
+```
+
+El MP3 se manda como **documento** (no como audio), por lo que WhatsApp muestra el nombre del archivo (ej. `perdido 88 BPM.mp3`) en vez de `AUD-20260723-xxxxx`. Los miembros del grupo pueden reproducirlo igual.
+
 ## Reglas
 
 - Antes de enviar contenido no solicitado, pregunta a Oscar si quiere recibirlo por WhatsApp.
