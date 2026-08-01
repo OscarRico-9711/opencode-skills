@@ -239,7 +239,6 @@ No preguntes nada de titulos o metadata mientras solo se esta creando/renderizan
 
 1. **Pollinations** (gratis, sin key) — FLUX. Primera opcion, no requiere configuracion.
 2. **Hugging Face** (con key, free tier ~$0.10/mes) — fallback si Pollinations falla.
-3. **OpenAI** (opcional, con key `sk-...`) — fallback final solo si esta instalado el paquete `openai` de Python.
 
 El script detecta errores (429 rate limit, 402 sin credito, 410 deprecado, timeout) e intenta con el siguiente proveedor automaticamente.
 
@@ -247,11 +246,10 @@ El script detecta errores (429 rate limit, 402 sin credito, 410 deprecado, timeo
 Crea `~\.opencode\api_keys.json` con este formato:
 ```json
 {
-  "huggingface": "hf_...",
-  "openai": "sk-..."
+  "huggingface": "hf_..."
 }
 ```
-Puedes omitirlo por completo: con solo Pollinations las imagenes se generan gratis. Agrega `huggingface` si quieres respaldo de HF, y `openai` solo si configuras el paquete `openai`.
+Puedes omitirlo por completo: con solo Pollinations las imagenes se generan gratis. Agrega `huggingface` si quieres respaldo de HF.
 
 Nota: Pollinations tiene rate limit (429) si generas varias imagenes seguidas; el script hace fallback automatico en ese caso.
 

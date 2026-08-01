@@ -84,14 +84,11 @@ def main():
     args = parser.parse_args()
 
     token = args.api_key or os.environ.get("HF_TOKEN") or load_api_key("huggingface")
-    openai_key = load_api_key("openai")
 
     providers = []
     providers.append(("pollinations", lambda: pollinations(args.prompt, args.width, args.height, args.output, args.timeout)))
     if token:
         providers.append(("huggingface", lambda: huggingface(args.prompt, args.width, args.height, args.output, token, args.timeout)))
-    if openai_key:
-        providers.append(("openai", lambda: _openai(openai_key)))
 
     if not providers:
         print("FAIL:No API providers configured", file=sys.stderr)
@@ -109,10 +106,6 @@ def main():
 
     print("FAIL:All image generation providers failed", file=sys.stderr)
     sys.exit(1)
-
-
-def _openai(key):
-    raise RuntimeError("OpenAI fallback not enabled (openai package not installed)")
 
 
 if __name__ == "__main__":
