@@ -181,6 +181,7 @@ Genera contenido como profesor experto de ingles para hispanohablantes. Reglas:
 - Para shorts de vocabulario, el idioma principal debe ser ingles. La definicion (`Meaning`/`Means`) debe ir en ingles tanto en pantalla como en audio.
 - Regla dura de espanol: nunca digas ni escribas `en espanol`, `en español`, `in Spanish`, ni frases parecidas. El espanol solo aparece en dos momentos: `Significa: <traduccion>` para la palabra/frase, y la traduccion del ejemplo al final de la escena de ejemplo. Todo lo demas debe ser en ingles.
 - No expliques el `Meaning` en espanol. La escena `Means:` debe tener solo definicion en ingles, tanto en pantalla como en audio.
+- **Regla dura de ortografia espanola: todo texto en espanol (translation_es, meaning_es, example_es, rule_es, table translations, `Significa: ...`) debe escribirse con tildes y caracteres correctos** (`á é í ó ú ñ ü ¿ ¡`). Edge-TTS pronuncia mal si faltan: escribe `encuentre`? No: siempre `encontré`, `cómo`, `dónde`, `estás`, `sueños`, `más`, `qué`. Revisa palabra por palabra antes de mandar a TTS o render. Un `Meaning` o ejemplo sin tildes suena robotico o cambia el significado.
 - Indicar CEFR razonable; si no hay seguridad, marcar `estimated`.
 - Para temas, ensenar por patrones y ejemplos, no parrafos largos.
 - Un concepto por escena/bloque visual.
@@ -222,7 +223,7 @@ Genera contenido como profesor experto de ingles para hispanohablantes. Reglas:
   "transitive": false,
   "register": "neutral",
   "example_en": "Don't give up on your dreams.",
-  "example_es": "No te rindas con tus suenos.",
+  "example_es": "No te rindas con tus sueños.",
   "note": "No se traduce literalmente."
 }
 ```
@@ -236,11 +237,11 @@ Genera contenido como profesor experto de ingles para hispanohablantes. Reglas:
   "topic": "Verb to be",
   "level": "A1",
   "section": "affirmative",
-  "rule_es": "Se usa para decir quien eres, como estas o donde estas.",
+  "rule_es": "Se usa para decir quién eres, cómo estás o dónde estás.",
   "table": [
     {"subject": "I", "verb": "am", "complement": "happy", "example": "I am happy", "translation": "Estoy feliz"},
-    {"subject": "You", "verb": "are", "complement": "ready", "example": "You are ready", "translation": "Estas listo"},
-    {"subject": "He", "verb": "is", "complement": "a teacher", "example": "He is a teacher", "translation": "El es profesor"}
+    {"subject": "You", "verb": "are", "complement": "ready", "example": "You are ready", "translation": "Estás listo"},
+    {"subject": "He", "verb": "is", "complement": "a teacher", "example": "He is a teacher", "translation": "Él es profesor"}
   ]
 }
 ```
@@ -256,6 +257,7 @@ Validar:
 - Definicion correcta y corta.
 - Traduccion al espanol natural.
 - Ejemplo gramaticalmente correcto.
+- **Ortografia espanola: todos los textos en espanol deben tener tildes y caracteres correctos (`sueños`, `cómo`, `encontré`, `más`, `estás`, `qué`, `dónde`). Si alguno falta, agregar `issue` en la validacion y corregir antes del preview.**
 - El nivel CEFR es razonable o marcado como estimado.
 - Phrasal verb: separable/transitive/register correctos cuando se indiquen.
 - Topic: tabla/patron correcto y ejemplos naturales.
@@ -299,7 +301,7 @@ Ejemplo para word/phrasal:
 ES: rendirse
 Meaning: to stop trying
 Example: Don't give up on your dreams.
-Traduccion: No te rindas con tus suenos.
+Traduccion: No te rindas con tus sueños.
 Validation: OK - medium confidence
 ```
 
@@ -309,8 +311,8 @@ Ejemplo para topic:
 Topic: Verb to be | A1 | Affirmative
 
 I     am    happy       -> I am happy       -> Estoy feliz
-You   are   ready       -> You are ready    -> Estas listo
-He    is    a teacher   -> He is a teacher  -> El es profesor
+You   are   ready       -> You are ready    -> Estás listo
+He    is    a teacher   -> He is a teacher  -> Él es profesor
 
 Validation: OK - high confidence
 ```
