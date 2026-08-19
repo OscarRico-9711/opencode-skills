@@ -33,10 +33,10 @@ Output files must always be WAV files named:
 <original-name>_drums.wav
 ```
 
-Use Demucs with the highest-quality model already used by Oscar's workflow:
+Use Demucs with `mdx_extra_q`, the model with the best drums/bass SDR in the Demucs lineup (cleaner, less blurry drums than `htdemucs_ft` which only leads on vocals):
 
 ```powershell
-py -3.10 -m demucs --name htdemucs_ft --two-stems=drums --float32 --clip-mode rescale --jobs 2 "<audio-file>" -o "<output-folder>"
+py -3.10 -m demucs --name mdx_extra_q --two-stems=drums --float32 --clip-mode rescale --jobs 2 "<audio-file>" -o "<output-folder>"
 ```
 
 ## Rules
@@ -48,7 +48,7 @@ py -3.10 -m demucs --name htdemucs_ft --two-stems=drums --float32 --clip-mode re
 - Skip files when `<original-name>_drums.wav` already exists in `sampleresult`.
 - Keep a log in `sampleresult\procesados.txt`.
 - Do not print Demucs progress/log output into the chat. Run Demucs quietly when possible and only report compact status such as `Convirtiendo 3/21...` and final counts.
-- If Demucs writes to `sampleresult\htdemucs_ft\<name>\drums.wav`, move that file to `sampleresult\<name>_drums.wav`.
+- If Demucs writes to `sampleresult\mdx_extra_q\<name>\drums.wav`, move that file to `sampleresult\<name>_drums.wav`.
 - After moving the drum stem, clean the temporary Demucs folder for that file.
 - If a file fails, continue with the next file and report the failures.
 - After all drums are generated, ask: `¿Mover los drums limpios a la siguiente carpeta DrumBreaks en E:\1_Librerias FL\1.PerpetuoBeats?`
@@ -106,18 +106,18 @@ foreach ($File in $Files) {
     continue
   }
 
-  py -3.10 -m demucs --name htdemucs_ft --two-stems=drums --float32 --clip-mode rescale --jobs 2 $File.FullName -o $OutputFolder
-  $DemucsDrums = Join-Path $OutputFolder "htdemucs_ft\$($File.BaseName)\drums.wav"
+  py -3.10 -m demucs --name mdx_extra_q --two-stems=drums --float32 --clip-mode rescale --jobs 2 $File.FullName -o $OutputFolder
+  $DemucsDrums = Join-Path $OutputFolder "mdx_extra_q\$($File.BaseName)\drums.wav"
   if (Test-Path -LiteralPath $DemucsDrums) {
     Move-Item -LiteralPath $DemucsDrums -Destination $Final -Force
     "OK - $($File.FullName) -> $Final" | Add-Content -LiteralPath $Log
-    $TempFolder = Join-Path $OutputFolder "htdemucs_ft\$($File.BaseName)"
+    $TempFolder = Join-Path $OutputFolder "mdx_extra_q\$($File.BaseName)"
     if (Test-Path -LiteralPath $TempFolder) { Remove-Item -LiteralPath $TempFolder -Recurse -Force }
   } else {
     "ERROR - $($File.FullName)" | Add-Content -LiteralPath $Log
   }
 }
-$ModelFolder = Join-Path $OutputFolder "htdemucs_ft"
+$ModelFolder = Join-Path $OutputFolder "mdx_extra_q"
 if (Test-Path -LiteralPath $ModelFolder) {
   $Remaining = @(Get-ChildItem -LiteralPath $ModelFolder -Force -ErrorAction SilentlyContinue)
   if ($Remaining.Count -eq 0) { Remove-Item -LiteralPath $ModelFolder -Force }

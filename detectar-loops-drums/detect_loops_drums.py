@@ -9,6 +9,26 @@ import numpy as np
 import soundfile as sf
 
 
+def snare_hit_interval(y: np.ndarray, sr: int, hop_length: int) -> float:
+    """Median interval between drum hits (snare/hat band) across the whole file.
+
+    For boom-bap, the musical phrase = 4 hits, so the full loop period is
+    roughly 4x this interval. Returns 0.0 if not enough hits are found."""
+    S = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop_length))
+    freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
+    band = S[(freqs >= 180) & (freqs < 2500)].sum(axis=0)
+    band = band / (band.max() + 1e-9)
+    pad = np.concatenate([[0], band[:-1]])
+    hits = np.where((band > 0.5) & (band > pad))[0]
+    if hits.size < 6:
+        return 0.0
+    diffs = np.diff(librosa.frames_to_time(hits, sr=sr, hop_length=hop_length))
+    diffs = diffs[(diffs > 0.45) & (diffs < 2.5)]
+    if diffs.size < 4:
+        return 0.0
+    return float(np.median(diffs))
+
+
 def seconds_to_tag(seconds: float) -> str:
     total = int(round(seconds))
     minutes, secs = divmod(total, 60)
@@ -153,13 +173,92 @@ def snap_to_drum_start(
     return snapped, float(local_onsets[best_idx]), float(snapped - start)
 
 
-def adjust_tempo_and_beats(tempo: float, beat_times: np.ndarray) -> tuple[float, np.ndarray, str]:
-    note = "normal"
-    if tempo >= 160 and len(beat_times) > 8:
-        return tempo / 2.0, beat_times[::2], "half-time"
+def refine_tempo(
+    onset_env: np.ndarray,
+    sr: int,
+    hop_length: int,
+    tempo: float,
+    beat_times: np.ndarray,
+) -> tuple[float, np.ndarray, str]:
+    """Pick the tempo interpretation whose beat grid best explains strong onsets.
+
+    For boom-bap drum patterns librosa often returns double tempo (beats on every
+    eighth). Prefer the slower interpretation when it still explains the onsets,
+    otherwise the loop exported as "1 bar" only contains half the phrase (2 drum
+    hits instead of 4). The slow candidate only wins when its beat grid keeps a
+    high enough mean onset energy relative to the fast one."""
+    frame_times = librosa.frames_to_time(np.arange(len(onset_env)), sr=sr, hop_length=hop_length)
+
+    def grid_mean(cand_beats: np.ndarray) -> float:
+        times = np.asarray(cand_beats, dtype=float)
+        if times.size == 0:
+            return -1.0
+        coords = np.interp(times, frame_times, np.arange(len(onset_env)))
+        coords = np.clip(coords, 0, len(onset_env) - 1)
+        return float(np.mean(onset_env[np.floor(coords).astype(int)]))
+
+    candidates = [("normal", tempo, beat_times)]
+    if tempo >= 150 and len(beat_times) > 8:
+        candidates.insert(0, ("half-time", tempo / 2.0, beat_times[::2]))
     if tempo < 60 and len(beat_times) > 2:
-        return tempo * 2.0, beat_times, "double-time-label"
-    return tempo, beat_times, note
+        candidates.append(("double-time", tempo * 2.0, beat_times))
+
+    best = None
+    for note, cand_tempo, cand_beats in candidates:
+        mean_onset = grid_mean(cand_beats)
+        if best is None or mean_onset > best[0] * 0.45:
+            best = (mean_onset, note, cand_tempo, np.asarray(cand_beats, dtype=float))
+    return best[2], best[3], best[1]
+
+
+def adjust_tempo_and_beats(onset_env: np.ndarray, sr: int, hop_length: int, tempo: float, beat_times: np.ndarray) -> tuple[float, np.ndarray, str]:
+    return refine_tempo(onset_env, sr, hop_length, tempo, beat_times)
+
+
+def build_hit_grid(
+    onset_env: np.ndarray,
+    frame_times: np.ndarray,
+    section_start: float,
+    section_end: float,
+    hit_interval: float,
+) -> tuple[float, np.ndarray]:
+    """Rebuild the rhythm grid from the real drum-hit interval (median caja spacing).
+
+    When librosa detects double/quadruple tempo, a "1 bar" export only contains
+    half or a quarter of the phrase. If we know the true spacing between drum
+    hits, one beat is forced to equal one hit, so a 4/4 bar holds 4 hits (the
+    full boom-bap phrase). Beats are placed on the strongest onset peaks that are
+    roughly hit_interval apart, starting from the section's loudest hit."""
+    local_env = onset_env[(frame_times >= section_start - 0.01) & (frame_times <= section_end + 0.01)]
+    local_times = frame_times[(frame_times >= section_start - 0.01) & (frame_times <= section_end + 0.01)]
+    if local_env.size < 4:
+        return 60.0 / hit_interval, np.array([section_start])
+
+    prev_is_lower = np.concatenate([[True], local_env[:-1] < local_env[1:]])
+    next_is_lower = np.concatenate([local_env[1:] < local_env[:-1], [True]])
+    peaks = np.where((local_env > 0) & prev_is_lower & next_is_lower)[0]
+    if peaks.size == 0:
+        peaks = np.array([int(np.argmax(local_env))])
+    peak_times = local_times[peaks]
+
+    strongest = peak_times[int(np.argmax(local_env[peaks]))]
+    grid = [strongest]
+    cursor = strongest
+    for direction in (1, -1):
+        t = strongest + direction * hit_interval
+        while section_start - 0.01 <= t <= section_end + 0.01:
+            window = peak_times[(peak_times >= t - hit_interval * 0.45) & (peak_times <= t + hit_interval * 0.45)]
+            if window.size == 0:
+                break
+            winner = window[int(np.argmax(local_env[peaks][np.isin(peak_times, window)]))]
+            grid.append(winner)
+            t = winner + direction * hit_interval
+            if len(grid) > 2000:
+                break
+    grid = sorted(set(round(g, 4) for g in grid if section_start - 0.01 <= g <= section_end + 0.01))
+    if len(grid) < 4:
+        grid = np.arange(section_start, section_end, hit_interval).tolist()
+    return 60.0 / hit_interval, np.asarray(grid, dtype=float)
 
 
 def detect_section_candidates(y: np.ndarray, sr: int, args: argparse.Namespace) -> tuple[list[dict], float]:
@@ -183,11 +282,18 @@ def detect_section_candidates(y: np.ndarray, sr: int, args: argparse.Namespace) 
         if len(section) < sr * args.min_section_seconds:
             continue
 
-        tempo, beat_frames = librosa.beat.beat_track(y=section, sr=sr, units="frames", trim=False)
-        tempo = float(np.asarray(tempo).reshape(-1)[0])
-        local_beats = librosa.frames_to_time(beat_frames, sr=sr)
-        tempo, local_beats, tempo_note = adjust_tempo_and_beats(tempo, local_beats)
-        beat_times = local_beats + section_start
+        if args.drum_interval and args.drum_interval > 0:
+            tempo, local_beats = build_hit_grid(onset_env, frame_times, section_start, section_end, args.drum_interval)
+            tempo_note = "hit-grid"
+        else:
+            tempo, beat_frames = librosa.beat.beat_track(y=section, sr=sr, units="frames", trim=False)
+            tempo = float(np.asarray(tempo).reshape(-1)[0])
+            local_beats = librosa.frames_to_time(beat_frames, sr=sr)
+            try:
+                tempo, local_beats, tempo_note = adjust_tempo_and_beats(onset_env, sr, hop_length, tempo, local_beats)
+            except Exception:
+                tempo_note = "normal"
+        beat_times = local_beats
 
         min_required_beats = 2 if args.allow_half_bar else args.min_bars * 4
         if len(beat_times) < min_required_beats + 1:
@@ -254,6 +360,8 @@ def detect_section_candidates(y: np.ndarray, sr: int, args: argparse.Namespace) 
                 if silence_ratio > args.max_silence_ratio:
                     continue
                 score += first_onset * 0.9 + attack_energy * 15.0 + first_second_onset_density * 5.0 + loop_onset_density * 2.0 + first_low_ratio * 8.0 + first_percussive_ratio * 4.0 + clean_score * 8.0
+                loop_energy_peak = local_strength(rms, frame_times, loop_start, loop_end)
+                score += loop_energy_peak * 40.0
                 score += beats_per_loop * 0.15
                 item = {
                     "section": section_index,
@@ -334,6 +442,7 @@ def main() -> int:
     parser.add_argument("--energy-percentile", type=float, default=58.0, help="RMS percentile used to find active sections")
     parser.add_argument("--onset-percentile", type=float, default=65.0, help="Onset percentile used to find active sections")
     parser.add_argument("--sr", type=int, default=44100, help="Analysis/export sample rate")
+    parser.add_argument("--drum-interval", type=float, default=0.0, help="Median seconds between drum hits; when >0 the beat grid is re-mapped so one beat = one hit and a 4/4 bar contains 4 hits")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -345,6 +454,13 @@ def main() -> int:
     y, sr = librosa.load(str(input_path), sr=args.sr, mono=True)
     if y.size == 0:
         raise RuntimeError("El audio esta vacio o no se pudo leer.")
+
+    if args.drum_interval and args.drum_interval > 0:
+        hit_interval = args.drum_interval
+    else:
+        hit_interval = snare_hit_interval(y, sr, hop_length=512)
+    if hit_interval > 0:
+        args.drum_interval = hit_interval
 
     base = safe_name(input_path.stem)
     output_prefix = safe_name(args.output_prefix) if args.output_prefix else short_output_prefix(input_path.stem)
