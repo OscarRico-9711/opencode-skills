@@ -14,16 +14,18 @@ $ErrorActionPreference = "Stop"
 if ([string]::IsNullOrWhiteSpace($Folder)) { $Folder = "E:\3_Samples\samplesnuevos" }
 if (-not (Test-Path -LiteralPath $Folder)) { throw "No existe la carpeta: $Folder" }
 
-$LongFiles = @()
+$Durations = @{}
+$Candidates = @()
 foreach ($Ext in @("*.mp3", "*.wav", "*.flac", "*.m4a", "*.aac")) {
-  $LongFiles += @(Get-ChildItem -LiteralPath $Folder -File -Filter $Ext | Where-Object {
-    $DurLine = & ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $_.FullName 2>$null
-    $Dur = 0.0
-    if ($DurLine -match '^\s*\d+(\.\d+)?\s*$') { $Dur = [double]$DurLine }
-    $Dur -gt $ThresholdSeconds
-  })
+  $Candidates += @(Get-ChildItem -LiteralPath $Folder -File -Filter $Ext)
 }
-$LongFiles = @($LongFiles | Sort-Object Name)
+foreach ($File in $Candidates) {
+  $DurLine = & ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $File.FullName 2>$null
+  $Dur = 0.0
+  if ($DurLine -match '^\s*\d+(\.\d+)?\s*$') { $Dur = [double]$DurLine }
+  $Durations[$File.FullName] = $Dur
+}
+$LongFiles = @($Candidates | Where-Object { $Durations[$_.FullName] -gt $ThresholdSeconds } | Sort-Object Name)
 
 if ($LongFiles.Count -eq 0) {
   Write-Output "No hay audios de mas de $([math]::Round($ThresholdSeconds/60)) min en $Folder"
@@ -35,14 +37,14 @@ Write-Output "Encontre $($LongFiles.Count) audios de mas de $([math]::Round($Thr
 $AllOk = $true
 $Counter = 0
 foreach ($File in $LongFiles) {
-  $DurLine = & ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $File.FullName
-  $Dur = [double]$DurLine
+  $Dur = $Durations[$File.FullName]
   $N = [int][Math]::Max(1, [Math]::Round($Dur / $TargetSeconds, 0, [MidpointRounding]::AwayFromZero))
   $PartLen = $Dur / $N
   $Boundaries = @()
   for ($i = 1; $i -lt $N; $i++) { $Boundaries += [Math]::Round($i * $PartLen, 3) }
   $Ext = $File.Extension
-  $TmpPattern = Join-Path $Folder "__tmp_$($File.BaseName)_%03d$Ext"
+  $EscapedBase = $File.BaseName.Replace("%", "%%")
+  $TmpPattern = Join-Path $Folder "__tmp_${EscapedBase}_%03d$Ext"
 
   if ($Boundaries.Count -gt 0) {
     & ffmpeg -y -hide_banner -loglevel error -i $File.FullName -f segment -segment_times ($Boundaries -join ",") -reset_timestamps 1 -c copy $TmpPattern 2>&1 | Out-Null

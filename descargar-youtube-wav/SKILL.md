@@ -128,6 +128,7 @@ Rules for the split step:
 - Do not split already-split short parts again: parts are ~10 min and stay below the 20 min threshold, so they are naturally ignored.
 - If a part name already exists, advance the counter until a free name.
 - Delete originals only after all parts were created and only with Oscar's confirmation; use Recycle Bin, never permanent delete.
+- Titulos con `%` en el nombre (validos en Windows) se escapan como `%%` en el patron de ffmpeg (el script ya lo hace); no fallar ni renombrar.
 
 The split logic lives in ONE shared script used both by this skill and by TubeDrop, so the behavior and defaults are always the same:
 
