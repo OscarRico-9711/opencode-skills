@@ -129,73 +129,30 @@ Rules for the split step:
 - If a part name already exists, advance the counter until a free name.
 - Delete originals only after all parts were created and only with Oscar's confirmation; use Recycle Bin, never permanent delete.
 
-Recommended PowerShell (run after the download command):
+The split logic lives in ONE shared script used both by this skill and by TubeDrop, so the behavior and defaults are always the same:
 
-```powershell
-$DownloadFolder = "E:\3_Samples\samplesnuevos"
-$SplitTargetSeconds = 600
-$LongThresholdSeconds = 1200
-$LongFiles = @()
-foreach ($Ext in @("*.mp3", "*.wav", "*.flac", "*.m4a", "*.aac")) {
-  $LongFiles += @(Get-ChildItem -LiteralPath $DownloadFolder -File -Filter $Ext | Where-Object {
-    $DurLine = & ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $_.FullName 2>$null
-    $Dur = 0.0
-    if ($DurLine -match '^\s*\d+(\.\d+)?\s*$') { $Dur = [double]$DurLine }
-    $Dur -gt $LongThresholdSeconds
-  })
-}
-$LongFiles = @($LongFiles | Sort-Object Name)
-if ($LongFiles.Count -eq 0) { "No hay audios de mas de 20 min."; return }
-
-$AllOk = $true
-$Counter = 0
-foreach ($File in $LongFiles) {
-  $DurLine = & ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $File.FullName
-  $Dur = [double]$DurLine
-  $N = [int][Math]::Max(1, [Math]::Round($Dur / $SplitTargetSeconds, 0, [MidpointRounding]::AwayFromZero))
-  $PartLen = $Dur / $N
-  $Boundaries = @()
-  for ($i = 1; $i -lt $N; $i++) { $Boundaries += [Math]::Round($i * $PartLen, 3) }
-  $TmpPattern = Join-Path $DownloadFolder "__tmp_$($File.BaseName)_%03d.mp3"
-  & ffmpeg -y -hide_banner -loglevel error -i $File.FullName -f segment -segment_times ($Boundaries -join ",") -reset_timestamps 1 -c copy $TmpPattern
-  $TmpParts = @(Get-ChildItem -LiteralPath $DownloadFolder -File -Filter "__tmp_$($File.BaseName)_*.mp3" | Sort-Object Name)
-  if ($TmpParts.Count -ne $N) {
-    $AllOk = $false
-    "ERROR en '$($File.Name)': se generaron $($TmpParts.Count) de $N partes"
-    continue
-  }
-  foreach ($Part in $TmpParts) {
-    do {
-      $Counter++
-      $NewName = "{0:D2}-{1}.mp3" -f $Counter, $File.BaseName
-      $Target = Join-Path $DownloadFolder $NewName
-    } while (Test-Path -LiteralPath $Target)
-    Rename-Item -LiteralPath $Part.FullName -NewName $NewName
-  }
-  "OK - '$($File.Name)' ($([math]::Round($Dur/60,1)) min) -> $N partes iguales de $([math]::Round($PartLen/60,1)) min"
-}
-
-if ($AllOk) {
-  "Listo: $Counter partes generadas (NN-Nombre.mp3)."
-  # Solo si Oscar confirma: reciclar los originales largos
-  Add-Type -AssemblyName Microsoft.VisualBasic
-  foreach ($File in $LongFiles) {
-    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile(
-      $File.FullName,
-      [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs,
-      [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin
-    )
-  }
-} else {
-  "NO se borro nada: hubo fallos en algunas divisiones."
-}
+```text
+C:\Users\oscar\.config\opencode\skills\descargar-youtube-wav\dividir_samples.ps1
 ```
 
-If `-c copy` produces segments with wrong durations or unwanted metadata, re-encode instead. It is slower, so only use it when copy is broken:
+Run it after a download (from any working directory):
 
 ```powershell
-& ffmpeg -y -hide_banner -loglevel error -i $File.FullName -f segment -segment_times ($Boundaries -join ",") -reset_timestamps 1 -c:a libmp3lame -q:a 0 $TmpPattern
+& powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\oscar\.config\opencode\skills\descargar-youtube-wav\dividir_samples.ps1" -Folder "E:\3_Samples\samplesnuevos"
 ```
+
+Optional parameters:
+
+```text
+-Folder            Carpeta donde estan los audios (default E:\3_Samples\samplesnuevos)
+-TargetSeconds     Minutos objetivo por parte (default 600 = 10 min)
+-ThresholdSeconds  Umbral para considerar un audio largo (default 1200 = 20 min)
+-RecycleOriginals  Si se pasa, envia los originales largos a la papelera al final (solo si todas las partes salieron bien)
+```
+
+El script detecta, divide en partes iguales, nombra `01-Nombre.ext` con contador global, verifica y (si `-RecycleOriginals`) recicla los originales. Si hay fallos, no borra nada.
+
+**TubeDrop**: la extension de navegador ejecuta este mismo script automaticamente al terminar una descarga (con `-RecycleOriginals`), sobre la carpeta de salida que elijas en el popup. No hace falta abrir opencode.
 
 ## Rules
 
